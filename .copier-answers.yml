@@ -11,4 +11,3 @@ project_short_description: A JupyterLab extension to get AI code completion with
 python_name: jupyterlab_codeium
 repository: https://github.com/jtpio/jupyterlab-codeium
 test: false
-
