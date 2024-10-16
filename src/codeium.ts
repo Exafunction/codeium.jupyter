@@ -30,13 +30,14 @@ export async function getCodeiumCompletions({
 }) {
   const lang = config.language;
   const language = Language[lang?.toUpperCase() as keyof typeof Language];
+  // TODO(kevin): Propogate extensionVersion and absoluteUri properly
   return await client.getCompletions(
     {
       metadata: {
         ideName: config.ideName,
         ideVersion: config.ideVersion,
         extensionName: 'codeium-jupyter',
-        extensionVersion: '1.8.80',
+        extensionVersion: '2.1.0',
         apiKey: config.apiKey,
         sessionId: sessionId,
         authSource: config.authSource
@@ -46,7 +47,8 @@ export async function getCodeiumCompletions({
         cursorOffset: BigInt(cursorOffset),
         language,
         editorLanguage: lang ?? 'python',
-        lineEnding: '\n'
+        lineEnding: '\n',
+        absoluteUri: 'file:///untitled.ipynb',
       },
       editorOptions: {
         tabSize: 4n,

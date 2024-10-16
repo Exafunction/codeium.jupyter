@@ -1,4 +1,25 @@
 {
+  "jupyter.lab.shortcuts": [
+    {
+      "command": "inline-completer:accept",
+      "selector": ".jp-mod-inline-completer-active",
+      "keys": ["Tab"]
+    }
+  ],
+  "jupyter.lab.menus": {
+    "main": [
+      {
+        "id": "jp-mainmenu-settings",
+        "rank": 80,
+        "items": [
+          {
+            "command": "@codeium-jupyter:get-auth-token",
+            "rank": 0
+          }
+        ]
+      }
+    ]
+  },
   "title": "Codeium",
   "description": "Codeium settings",
   "type": "object",
@@ -6,13 +27,13 @@
     "portalUrl": {
       "type": "string",
       "title": "Enterprise Portal URL.",
-      "description": "The portal URL to use for Codeium, e.g. codeium.example.com. Enterprise only.",
+      "description": "The portal URL to use for Codeium, e.g. https://codeium.example.com. Enterprise only.",
       "default": ""
     },
     "authToken": {
       "type": "string",
       "title": "Authentication Token.",
-      "description": "The authentication token.",
+      "description": "The Codeium authentication token. Get this with the 'Get Codeium Authentication Token' field in the Settings tab.",
       "default": ""
     }
   },
