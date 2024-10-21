@@ -25,16 +25,15 @@ developer, not the best code monkey.
 
 With Codeium, you get:
 
--  Unlimited single and multi-line code completions forever
--  Support for 70+ programming languages: Javascript, Python,
-   Typescript, PHP, Go, Java, C, C++, Rust, Ruby, and more.
+- Unlimited single and multi-line code completions forever
+- Support for 70+ programming languages: Javascript, Python,
+  Typescript, PHP, Go, Java, C, C++, Rust, Ruby, and more.
 
 Join thousands of other developers who are using Codeium for free to
 accelerate their software iteration process, improve their code quality
 and consistency, reduce the number of code review iterations, accelerate
 developer onboarding, and keep them in their flow state. Want to learn
 more? Check out our [FAQ](https://www.codeium.com/faq).
-
 
 ## Support, Feedback, and Community
 

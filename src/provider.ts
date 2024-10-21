@@ -10,10 +10,54 @@ import { IEditorLanguageRegistry } from '@jupyterlab/codemirror';
 import { LanguageServerService } from './api/proto/exa/language_server_pb/language_server_connect';
 import { PUBLIC_API_SERVER, PUBLIC_WEBSITE } from './urls';
 import { registerUser } from './auth';
-import { Dialog, showDialog } from '@jupyterlab/apputils';
+import { ContentsManager } from '@jupyterlab/services';
 
 import { getCodeiumCompletions, simplifyCompletions } from './codeium';
 import { v4 as uuidv4 } from 'uuid';
+
+function isResponseError(
+  error: any
+): error is { response: { status: number } } {
+  return error.response && typeof error.response.status === 'number';
+}
+
+// Note: some environments do not handle hidden directories, which is why
+// we use codeium-jupyter instead of .codeium-jupyter
+const SAVED_DIRECTORY = 'codeium-jupyter';
+const SAVED_FILE = 'config.json';
+
+interface Config {
+  apiKey?: string;
+  name?: string;
+}
+
+async function saveApiKeyAndName(config: Config) {
+  const contents = new ContentsManager();
+
+  // Ensure the directory exists
+  try {
+    await contents.get(SAVED_DIRECTORY, { type: 'directory' });
+  } catch (error: unknown) {
+    if (isResponseError(error) && error.response.status === 404) {
+      // Create the directory if it doesn't exist
+      await contents.save(SAVED_DIRECTORY, {
+        type: 'directory',
+        format: 'json',
+        content: null
+      });
+    } else {
+      throw error;
+    }
+  }
+
+  const filePath = `${SAVED_DIRECTORY}/${SAVED_FILE}`;
+  // Save the file with the API key content
+  await contents.save(filePath, {
+    type: 'file',
+    format: 'text',
+    content: JSON.stringify(config, null, 2) // Save the config
+  });
+}
 
 function languageServerClient(
   baseUrl: string
@@ -23,6 +67,26 @@ function languageServerClient(
     useBinaryFormat: true
   });
   return createPromiseClient(LanguageServerService, transport);
+}
+
+export function getProfileUrl(portalUrl: string): string {
+  if (portalUrl === '') {
+    return PUBLIC_WEBSITE + '/profile';
+  }
+  return portalUrl.replace(/\/$/, '') + '/profile';
+}
+
+export function getAuthTokenUrl(portalUrl: string): string {
+  const profileUrl = getProfileUrl(portalUrl);
+  const params = new URLSearchParams({
+    response_type: 'token',
+    redirect_uri: 'chrome-show-auth-token',
+    scope: 'openid profile email',
+    prompt: 'login',
+    redirect_parameters_type: 'query',
+    state: uuidv4()
+  });
+  return `${profileUrl}?${params}`;
 }
 
 export function getApiServerUrl(portalUrl: string): string {
@@ -48,57 +112,49 @@ export class CodeiumProvider implements IInlineCompletionProvider {
     this._portalUrl = options.portalUrl;
     this._ideName = options.appname;
     this._ideVersion = options.version;
-    this._client = languageServerClient(getApiServerUrl(options.portalUrl));
+    this._client = languageServerClient(getLanguageServerUrl(options.portalUrl));
   }
 
   set portalUrl(portalUrl: string) {
-    if (portalUrl == this._portalUrl && this._apiKey !== '') {
+    if (portalUrl === this._portalUrl) {
       // Do not show dialog if portalUrl is the same and api key is already set.
-      return;
+      if (this._apiKey !== '') {
+        return;
+      }
+      // Load the api key from storage if it exists
+      const contents = new ContentsManager();
+      const filePath = `${SAVED_DIRECTORY}/${SAVED_FILE}`;
+      contents
+        .get(filePath)
+        .then(file => {
+          if (file !== null) {
+            this._apiKey = file.content;
+            console.log('API key loaded from storage');
+            return;
+          }
+        })
+        .catch(error => {
+          console.error(error);
+        });
     }
     this._portalUrl = portalUrl;
     this._client = languageServerClient(getLanguageServerUrl(portalUrl));
-    showDialog({
-      title: 'Portal URL changed',
-      body: 'Click below to get new auth token.',
-      buttons: [
-        Dialog.cancelButton({ label: 'Cancel' }),
-        Dialog.okButton({ label: 'Get auth token' })
-      ]
-    }).then(result => {
-      if (result.button.label === 'Get auth token') {
-        window.open(this.getAuthTokenUrl(), '_blank');
-      }
-    });
   }
 
   set authToken(authToken: string) {
     registerUser(authToken, getApiServerUrl(this._portalUrl))
       .then(apiKeyAndName => {
         this._apiKey = apiKeyAndName.api_key;
+        saveApiKeyAndName({ apiKey: this._apiKey, name: apiKeyAndName.name })
+          .then(() => {
+            console.log('API key saved successfully!');
+          })
+          .catch(error => {
+            console.error('Failed to save API key:', error);
+          });
         console.log('Welcome,', apiKeyAndName.name);
       })
       .catch(error => console.error(error));
-  }
-
-  getProfileUrl(): string {
-    if (this._portalUrl === '') {
-      return PUBLIC_WEBSITE + '/profile';
-    }
-    return this._portalUrl.replace(/\/$/, '') + '/profile';
-  }
-
-  getAuthTokenUrl(): string {
-    const profileUrl = this.getProfileUrl();
-    const params = new URLSearchParams({
-      response_type: 'token',
-      redirect_uri: 'chrome-show-auth-token',
-      scope: 'openid profile email',
-      prompt: 'login',
-      redirect_parameters_type: 'query',
-      state: uuidv4()
-    });
-    return `${profileUrl}?${params}`;
   }
 
   async fetch(

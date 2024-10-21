@@ -5,7 +5,7 @@ import {
 import { IEditorLanguageRegistry } from '@jupyterlab/codemirror';
 import { ICompletionProviderManager } from '@jupyterlab/completer';
 import { ISettingRegistry } from '@jupyterlab/settingregistry';
-import { CodeiumProvider } from './provider';
+import { CodeiumProvider, getAuthTokenUrl } from './provider';
 
 const plugin: JupyterFrontEndPlugin<void> = {
   id: 'codeium-jupyter:inline-provider',
@@ -21,6 +21,8 @@ const plugin: JupyterFrontEndPlugin<void> = {
     editorLanguageRegistry: IEditorLanguageRegistry,
     settingRegistry: ISettingRegistry
   ): void => {
+    const { commands } = app;
+
     settingRegistry
       .load(plugin.id)
       .then(settings => {
@@ -31,6 +33,16 @@ const plugin: JupyterFrontEndPlugin<void> = {
           appname: app.name,
           version: app.version
         });
+
+        commands.addCommand('@codeium-jupyter:get-auth-token', {
+          label: 'Get Codeium Authentication Token',
+          execute: () => {
+            window.open(
+              getAuthTokenUrl(settings.get('portalUrl').composite as string)
+            );
+          }
+        });
+
         manager.registerInlineProvider(provider);
         const authToken = settings.get('authToken').composite as string;
         if (authToken !== '') {
