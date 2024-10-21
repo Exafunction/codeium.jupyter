@@ -30,14 +30,14 @@ export async function getCodeiumCompletions({
 }) {
   const lang = config.language;
   const language = Language[lang?.toUpperCase() as keyof typeof Language];
-  // TODO(kevin): Propogate extensionVersion and absoluteUri properly
+  // TODO(kevin): Propagate extensionVersion and absoluteUri properly
   return await client.getCompletions(
     {
       metadata: {
         ideName: config.ideName,
         ideVersion: config.ideVersion,
         extensionName: 'codeium-jupyter',
-        extensionVersion: '2.1.0',
+        extensionVersion: '2.1.1',
         apiKey: config.apiKey,
         sessionId: sessionId,
         authSource: config.authSource
